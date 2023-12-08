@@ -53,19 +53,7 @@ def get_hand_rank(hand, jokers):
         else:
             frequencies[0] += jokers_count
 
-    if frequencies[0] == 5:
-        return FIVE_OF_A_KIND, sort_key
-    if frequencies[0] == 4:
-        return FOUR_OF_A_KIND, sort_key
-    if frequencies[0] == 3 and frequencies[1] == 2:
-        return FULL_HOUSE, sort_key
-    if frequencies[0] == 3:
-        return THREE_OF_A_KIND, sort_key
-    if frequencies[0] == 2 and frequencies[1] == 2:
-        return TWO_PAIR, sort_key
-    if frequencies[0] == 2:
-        return ONE_PAIR, sort_key
-    return HIGH_CARD, sort_key
+    return tuple(frequencies), sort_key
 
 def part1(fname):
     """
