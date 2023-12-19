@@ -58,39 +58,24 @@ class WorkflowStep:
         test, next_wflow = step_str.split(":")
         self.test = (test[0], test[1] == '>', int(test[2:]), next_wflow)
 
-    def fails(self, values):
+    def run_test(self, values):
         """
-        Returns the values if the test fails and can fail (otherwise None), and the next workflow.
-        """
-        val, gt, boundary, _ = self.test
-        values = copy.deepcopy(values)
-        if gt:
-            if values[val][0] > boundary:
-                return None
-            values[val][1] = min(values[val][1], boundary)
-            return values
-
-        if values[val][1] < boundary:
-            return None
-        values[val][0] = max(values[val][0], boundary)
-        return values
-
-    def passes(self, values):
-        """
-        Returns the values if the test passes, and can pass (otherwise None).
+        Returns (pass_values, fail_values, next_wflow).  If passing or failing is not possible,
+        returns None for the corresponding values.
         """
         val, gt, boundary, next_wflow = self.test
-        values = copy.deepcopy(values)
-        if gt:
-            if values[val][1] <= boundary:
-                return None, next_wflow
-            values[val][0] = max(values[val][0], boundary+1)
-            return values, next_wflow
+        r = values[val]
+        lower_values, upper_values = values.copy(), values.copy()
+        lower_values[val] = [r[0], min(r[1], boundary-int(not gt))]
+        upper_values[val] = [max(r[0], boundary+int(gt)), r[1]]
+        if lower_values[val][1] < lower_values[val][0]:
+            lower_values = None
+        if upper_values[val][1] < upper_values[val][0]:
+            upper_values = None
 
-        if values[val][0] >= boundary:
-            return None, next_wflow
-        values[val][1] = min(values[val][1], boundary-1)
-        return values, next_wflow
+        if gt:
+            return upper_values, lower_values, next_wflow
+        return lower_values, upper_values, next_wflow
 
     def __repr__(self):
         return str(self.test)
@@ -106,10 +91,9 @@ def dfs(workflows, wflow_name, values):
     current_workflow = workflows[wflow_name]
     combinations = 0
     for step in current_workflow[:-1]:
-        pass_values, next_wflow = step.passes(values)
+        pass_values, values, next_wflow = step.run_test(values)
         if pass_values is not None:
             combinations += dfs(workflows, next_wflow, pass_values)
-        values = step.fails(values)
         if values is None:
             return combinations
 
